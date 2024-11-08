@@ -73,7 +73,6 @@ class Router(object):
                             reply_packet=create_ip_arp_reply(i.ethaddr,arp.senderhwaddr,i.ipaddr,arp.senderprotoaddr)#because reply,so the target is which send this arp packet
                             self.net.send_packet(ifaceName,reply_packet)
                 elif (arp.operation==ArpOperation.Reply): #reply
-                    #log_info("aaa")
                     if (arp.senderhwaddr!="ff:ff:ff:ff:ff:ff"):
                         self.ip_mac[arp.senderprotoaddr]=[arp.senderhwaddr,time.time()]
                     elif arp.senderprotoaddr not in self.ip_mac.keys():
@@ -81,11 +80,8 @@ class Router(object):
                     if (arp.senderprotoaddr in self.IPv4_wait_queue.keys()):
                         for target in self.IPv4_wait_queue[arp.senderprotoaddr].packet_list:
                             ethernet=target.get_header(Ethernet)
-                            #log_info("aaa")
                             ethernet.dst=self.ip_mac[arp.senderprotoaddr][0]
-                            #log_info("777")
                             ethernet.src=self.IPv4_wait_queue[arp.senderprotoaddr].send_interface.ethaddr
-                            #log_info("888")
                             if target.has_header(ICMP):
                                 IPv4_send_packet=ethernet+target.get_header(IPv4)+target.get_header(ICMP)
                             elif target.has_header(UDP):
@@ -93,7 +89,7 @@ class Router(object):
                             if target.has_header(RawPacketContents):
                                 IPv4_send_packet+=target.get_header(RawPacketContents)
                             self.net.send_packet(self.IPv4_wait_queue[arp.senderprotoaddr].send_interface,IPv4_send_packet)
-                        #log_info(f"asdf{IPv4_send_packet}")
+                        #log_info(f"{IPv4_send_packet}")
                         del self.IPv4_wait_queue[arp.senderprotoaddr]
                         #del self.IPv4_wait_queue[arp.senderprotoaddr]
                 self.printnum+=1
@@ -105,7 +101,6 @@ class Router(object):
 
         if (packet.has_header(IPv4)):
             #import pdb; pdb.set_trace()
-            #log_info("222")
             ipv4=packet.get_header(IPv4)
             ipv4.ttl-=1
             if packet.get_header(Ethernet).dst not in [i.ethaddr for i in self.net.interfaces()]:
@@ -121,17 +116,12 @@ class Router(object):
                     #log_info(f"{i.prefix}, {i.mask}, {i.next_ip}")
                     if (int(ipv4.dst)&int(IPv4Address(i.mask))==int(IPv4Address(str(i.prefix).split("/")[0]))): #find
                         find_dst=True
-                        #log_info("qwerasdf")
-                        #log_info("222")
                         if (i.prefix.prefixlen>max_length):
                             max_length=i.prefix.prefixlen
                             target=i
-                #log_info("333")
                 if (not find_dst):
                     return#do nothing, will be handled in lab5
                 else:
-                    #log_info("444")
-                    #log_info("bbb")
                     #ipv4.ttl-=1 #in lab5, we should think about how to solve ttl<0
                     w=target.next_ip
                     if (w==None):
@@ -154,11 +144,7 @@ class Router(object):
                             IPv4_send_packet+=packet.get_header(RawPacketContents)
                         self.net.send_packet(self.net.interface_by_name(target.next_interface),IPv4_send_packet)
                     else:
-                        #log_info("666")
-                        #if (target.next_ip==None):
-                        #    target.next_ip=ipv4.dst
                         if (w in self.IPv4_wait_queue.keys()):
-                            #log_info("777")
                             self.IPv4_wait_queue[w].packet_list.append(packet)
                         else: # send request
                             request_packet=create_ip_arp_request(self.net.interface_by_name(target.next_interface).ethaddr,self.net.interface_by_name(target.next_interface).ipaddr,w)
